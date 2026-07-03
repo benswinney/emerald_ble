@@ -96,11 +96,11 @@ void Emerald::reset_daily_energy() {
 void Emerald::force_reconnect_() {
   // Close the GATT connection; ble_client's own DISCONNECT_EVT handler will set
   // state to IDLE and the esp32_ble_tracker scan loop will reconnect.
-  ESP_LOGI(TAG, "[%s] Forcing GATT disconnect to trigger reconnect", this->parent_->address_str().c_str());
-  auto ret = esp_ble_gattc_close(this->parent()->gattc_if, this->parent()->conn_id);
+  ESP_LOGI(TAG, "[%s] Forcing GATT disconnect to trigger reconnect", this->parent_->address_str());
+  auto ret = esp_ble_gattc_close(this->parent()->get_gattc_if(), this->parent()->get_conn_id());
   if (ret) {
     ESP_LOGW(TAG, "[%s] esp_ble_gattc_close failed during forced reconnect, status=%d",
-             this->parent_->address_str().c_str(), ret);
+             this->parent_->address_str(), ret);
   }
 }
 
@@ -263,12 +263,12 @@ void Emerald::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gatt
   switch (event) {
     case ESP_GATTC_DISCONNECT_EVT: {
       ESP_LOGI(TAG, "[%s] Disconnected — resetting connection state for next attempt",
-               this->parent_->address_str().c_str());
+               this->parent_->address_str());
       this->reset_connection_state_();
       break;
     }
     case ESP_GATTC_SEARCH_CMPL_EVT: {
-      ESP_LOGD(TAG, "[%s] ESP_GATTC_SEARCH_CMPL_EVT - discovering handles", this->parent_->address_str().c_str());
+      ESP_LOGD(TAG, "[%s] ESP_GATTC_SEARCH_CMPL_EVT - discovering handles", this->parent_->address_str());
 
       // Discover time_read characteristic
       auto *chr = this->parent()->get_characteristic(EMERALD_SERVICE_TIME_UUID, EMERALD_CHARACTERISTIC_TIME_READ_UUID);
@@ -299,24 +299,24 @@ void Emerald::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gatt
         // Don't break - battery is optional
       } else {
         this->battery_char_handle_ = chr->handle;
-        ESP_LOGD(TAG, "[%s] Found battery characteristic at handle 0x%04x", this->parent_->address_str().c_str(), this->battery_char_handle_);
+        ESP_LOGD(TAG, "[%s] Found battery characteristic at handle 0x%04x", this->parent_->address_str(), this->battery_char_handle_);
       }
 
       this->handles_discovered_ = true;
       ESP_LOGI(TAG, "[%s] Discovered handles - time_read:0x%04x time_write:0x%04x battery:0x%04x",
-               this->parent_->address_str().c_str(),
+               this->parent_->address_str(),
                this->time_read_char_handle_, this->time_write_size_char_handle_,
                this->battery_char_handle_);
 
       // If authentication already completed while we were discovering handles, set up communication now
       if (this->auth_completed_) {
-        ESP_LOGD(TAG, "[%s] Auth already complete, setting up communication now", this->parent_->address_str().c_str());
+        ESP_LOGD(TAG, "[%s] Auth already complete, setting up communication now", this->parent_->address_str());
         this->setup_communication_();
       }
       break;
     }
     case ESP_GATTC_READ_CHAR_EVT: {
-      ESP_LOGD(TAG, "[%s] ESP_GATTC_READ_CHAR_EVT (Received READ)", this->parent_->address_str().c_str());
+      ESP_LOGD(TAG, "[%s] ESP_GATTC_READ_CHAR_EVT (Received READ)", this->parent_->address_str());
       if (param->read.status != ESP_GATT_OK) {
         ESP_LOGW(TAG, "Error reading char at handle %d, status=%d", param->read.handle, param->read.status);
         break;
@@ -340,19 +340,19 @@ void Emerald::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gatt
     }
 
     case ESP_GATTC_WRITE_CHAR_EVT: {
-      ESP_LOGD(TAG, "[%s] ESP_GATTC_WRITE_CHAR_EVT (Write confirmed)", this->parent_->address_str().c_str());
+      ESP_LOGD(TAG, "[%s] ESP_GATTC_WRITE_CHAR_EVT (Write confirmed)", this->parent_->address_str());
       if (param->write.status != ESP_GATT_OK) {
         ESP_LOGW(TAG, "Error writing value to char at handle %d, status=%d", param->write.handle, param->write.status);
         break;
       }
 
       // ESP_LOGE(TAG, "[%s] Seemed to miss any handle matches, what is the handel?: %d",
-      //          this->parent_->address_str().c_str(), param->write.handle);
+      //          this->parent_->address_str(), param->write.handle);
       break;
     }  // ESP_GATTC_WRITE_CHAR_EVT
 
     case ESP_GATTC_NOTIFY_EVT: {
-      ESP_LOGD(TAG, "[%s] Received notification", this->parent_->address_str().c_str());
+      ESP_LOGD(TAG, "[%s] Received notification", this->parent_->address_str());
 
       // time_read_char_handle_
       if (param->notify.handle == this->time_read_char_handle_) {
@@ -379,19 +379,19 @@ void Emerald::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
     // This event is sent once authentication has completed
     case ESP_GAP_BLE_AUTH_CMPL_EVT: {
       if (param->ble_security.auth_cmpl.success) {
-        ESP_LOGI(TAG, "[%s] Authentication successful", this->parent_->address_str().c_str());
+        ESP_LOGI(TAG, "[%s] Authentication successful", this->parent_->address_str());
         this->auth_completed_ = true;
 
         if (!this->handles_discovered_) {
           ESP_LOGI(TAG, "[%s] Auth complete but handles not yet discovered, will set up communication after discovery",
-                   this->parent_->address_str().c_str());
+                   this->parent_->address_str());
           break;
         }
 
         this->setup_communication_();
       } else {
         ESP_LOGW(TAG, "[%s] Authentication failed (reason=0x%02x) — forcing reconnect",
-                 this->parent_->address_str().c_str(),
+                 this->parent_->address_str(),
                  param->ble_security.auth_cmpl.fail_reason);
         // Without this the meter stays in a half-connected dead state until reboot.
         // Reset our flags and tear down the GATT connection so ble_client/tracker
@@ -412,20 +412,20 @@ void Emerald::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
 }
 
 void Emerald::setup_communication_() {
-  ESP_LOGI(TAG, "[%s] Setting up communication with Emerald device", this->parent_->address_str().c_str());
+  ESP_LOGI(TAG, "[%s] Setting up communication with Emerald device", this->parent_->address_str());
 
   // Register for notifications on the time read characteristic
-  auto status = esp_ble_gattc_register_for_notify(this->parent_->gattc_if, this->parent_->remote_bda,
+  auto status = esp_ble_gattc_register_for_notify(this->parent_->get_gattc_if(), this->parent_->get_remote_bda(),
                                                       this->time_read_char_handle_);
   if (status) {
     ESP_LOGW(TAG, "[%s] esp_ble_gattc_register_for_notify failed, status=%d",
-              this->parent_->address_str().c_str(), status);
+              this->parent_->address_str(), status);
   }
 
   // Send auto upload command. The IDF write API takes a non-const uint8_t*, so
   // cast away const on the flash-resident buffer; the device only reads from it.
-  ESP_LOGI(TAG, "[%s] Writing auto upload code to Emerald", this->parent_->address_str().c_str());
-  auto write_status = esp_ble_gattc_write_char(this->parent()->gattc_if, this->parent()->conn_id,
+  ESP_LOGI(TAG, "[%s] Writing auto upload code to Emerald", this->parent_->address_str());
+  auto write_status = esp_ble_gattc_write_char(this->parent()->get_gattc_if(), this->parent()->get_conn_id(),
                                          this->time_write_size_char_handle_, sizeof(SET_AUTO_UPLOAD_STATUS_CMD),
                                          const_cast<uint8_t *>(SET_AUTO_UPLOAD_STATUS_CMD),
                                          ESP_GATT_WRITE_TYPE_NO_RSP, ESP_GATT_AUTH_REQ_NONE);
@@ -435,10 +435,10 @@ void Emerald::setup_communication_() {
 
   // Read battery level
   if (this->battery_char_handle_ == 0) {
-    ESP_LOGW(TAG, "[%s] Battery characteristic handle is 0, skipping battery read", this->parent_->address_str().c_str());
+    ESP_LOGW(TAG, "[%s] Battery characteristic handle is 0, skipping battery read", this->parent_->address_str());
   } else {
-    ESP_LOGD(TAG, "[%s] Reading battery level from handle 0x%04x", this->parent_->address_str().c_str(), this->battery_char_handle_);
-    auto read_battery_status = esp_ble_gattc_read_char(this->parent()->gattc_if, this->parent()->conn_id,
+    ESP_LOGD(TAG, "[%s] Reading battery level from handle 0x%04x", this->parent_->address_str(), this->battery_char_handle_);
+    auto read_battery_status = esp_ble_gattc_read_char(this->parent()->get_gattc_if(), this->parent()->get_conn_id(),
                                                         this->battery_char_handle_, ESP_GATT_AUTH_REQ_NONE);
     if (read_battery_status) {
       ESP_LOGW(TAG, "Error sending read request for battery, status=%d", read_battery_status);
@@ -446,10 +446,10 @@ void Emerald::setup_communication_() {
 
     // Enable notifications for battery
     auto notify_battery_status = esp_ble_gattc_register_for_notify(
-        this->parent_->gattc_if, this->parent_->remote_bda, this->battery_char_handle_);
+        this->parent_->get_gattc_if(), this->parent_->get_remote_bda(), this->battery_char_handle_);
     if (notify_battery_status) {
       ESP_LOGW(TAG, "[%s] esp_ble_gattc_register_for_notify for battery failed, status=%d",
-                this->parent_->address_str().c_str(), notify_battery_status);
+                this->parent_->address_str(), notify_battery_status);
     }
   }
 
