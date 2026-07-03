@@ -1,0 +1,5 @@
+.esphome/
+__pycache__/
+*.pyc
+.pioenvs/
+.piolibdeps/
