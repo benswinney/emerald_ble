@@ -199,6 +199,13 @@ void Emerald::decode_emerald_packet_(const uint8_t *data, uint16_t length) {
 
           // Prefer an ESPHome time component if one is wired up AND currently has a valid time.
           // Otherwise fall back to the day-of-month encoded in the Emerald packet itself.
+          //
+          // Both sources deliberately yield day-*of-month* (1-31). Using day_of_year here
+          // would break twice over: the two sources disagree, so a time component going
+          // valid mid-run (BLE packets usually beat SNTP after a reboot) reads as a day
+          // change and wipes daily_pulses_; and day_of_year does not fit the uint8_t
+          // day_of_last_measurement_ field, where day 256 truncates to 0 -- the same value
+          // as the "no measurement yet" sentinel, so that rollover never fires.
           bool used_esphome_time = false;
 #ifdef USE_TIME
           if (this->time_.has_value()) {
@@ -207,10 +214,10 @@ void Emerald::decode_emerald_packet_(const uint8_t *data, uint16_t length) {
             if (date_of_measurement.is_valid()) {
               used_esphome_time = true;
               if (this->day_of_last_measurement_ == 0) {
-                this->day_of_last_measurement_ = date_of_measurement.day_of_year;
-              } else if (this->day_of_last_measurement_ != date_of_measurement.day_of_year) {
+                this->day_of_last_measurement_ = date_of_measurement.day_of_month;
+              } else if (this->day_of_last_measurement_ != date_of_measurement.day_of_month) {
                 this->daily_pulses_ = 0;
-                this->day_of_last_measurement_ = date_of_measurement.day_of_year;
+                this->day_of_last_measurement_ = date_of_measurement.day_of_month;
                 day_rolled_over = true;
               }
             }
