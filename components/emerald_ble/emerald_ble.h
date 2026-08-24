@@ -21,12 +21,18 @@ namespace emerald_ble {
 
 namespace espbt = esphome::esp32_ble_tracker;
 
-static const espbt::ESPBTUUID EMERALD_SERVICE_TIME_UUID =
-    espbt::ESPBTUUID::from_raw("00001910-0000-1000-8000-00805f9b34fb");
+// The string forms are kept next to the UUIDs so log messages can print them without
+// calling into ESPBTUUID's formatting API, whose shape has changed across ESPHome
+// versions (to_string() -> to_str(char *buf) in 2026.8).
+static constexpr const char *EMERALD_SERVICE_TIME_UUID_STR = "00001910-0000-1000-8000-00805f9b34fb";
+static constexpr const char *EMERALD_CHARACTERISTIC_TIME_READ_UUID_STR = "00002b10-0000-1000-8000-00805f9b34fb";
+static constexpr const char *EMERALD_CHARACTERISTIC_TIME_WRITE_UUID_STR = "00002b11-0000-1000-8000-00805f9b34fb";
+
+static const espbt::ESPBTUUID EMERALD_SERVICE_TIME_UUID = espbt::ESPBTUUID::from_raw(EMERALD_SERVICE_TIME_UUID_STR);
 static const espbt::ESPBTUUID EMERALD_CHARACTERISTIC_TIME_READ_UUID =
-    espbt::ESPBTUUID::from_raw("00002b10-0000-1000-8000-00805f9b34fb");  // indicate, notify, read, write
+    espbt::ESPBTUUID::from_raw(EMERALD_CHARACTERISTIC_TIME_READ_UUID_STR);  // indicate, notify, read, write
 static const espbt::ESPBTUUID EMERALD_CHARACTERISTIC_TIME_WRITE_UUID =
-    espbt::ESPBTUUID::from_raw("00002b11-0000-1000-8000-00805f9b34fb");  // indicate, notify, read, write
+    espbt::ESPBTUUID::from_raw(EMERALD_CHARACTERISTIC_TIME_WRITE_UUID_STR);  // indicate, notify, read, write
 
 static const espbt::ESPBTUUID EMERALD_BATTERY_SERVICE_UUID = espbt::ESPBTUUID::from_uint16(0x180F);
 static const espbt::ESPBTUUID EMERALD_BATTERY_CHARACTERISTIC_UUID = espbt::ESPBTUUID::from_uint16(0x2A19);

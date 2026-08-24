@@ -274,8 +274,7 @@ void Emerald::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gatt
       auto *chr = this->parent()->get_characteristic(EMERALD_SERVICE_TIME_UUID, EMERALD_CHARACTERISTIC_TIME_READ_UUID);
       if (chr == nullptr) {
         ESP_LOGW(TAG, "No time read characteristic found at service %s char %s",
-                 EMERALD_SERVICE_TIME_UUID.to_string().c_str(),
-                 EMERALD_CHARACTERISTIC_TIME_READ_UUID.to_string().c_str());
+                 EMERALD_SERVICE_TIME_UUID_STR, EMERALD_CHARACTERISTIC_TIME_READ_UUID_STR);
         break;
       }
       this->time_read_char_handle_ = chr->handle;
@@ -284,8 +283,7 @@ void Emerald::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gatt
       chr = this->parent()->get_characteristic(EMERALD_SERVICE_TIME_UUID, EMERALD_CHARACTERISTIC_TIME_WRITE_UUID);
       if (chr == nullptr) {
         ESP_LOGW(TAG, "No time write characteristic found at service %s char %s",
-                 EMERALD_SERVICE_TIME_UUID.to_string().c_str(),
-                 EMERALD_CHARACTERISTIC_TIME_WRITE_UUID.to_string().c_str());
+                 EMERALD_SERVICE_TIME_UUID_STR, EMERALD_CHARACTERISTIC_TIME_WRITE_UUID_STR);
         break;
       }
       this->time_write_size_char_handle_ = chr->handle;
@@ -293,9 +291,8 @@ void Emerald::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gatt
       // Discover battery characteristic (optional - device may not have standard battery service)
       chr = this->parent()->get_characteristic(EMERALD_BATTERY_SERVICE_UUID, EMERALD_BATTERY_CHARACTERISTIC_UUID);
       if (chr == nullptr) {
-        ESP_LOGW(TAG, "No battery characteristic found at service %s char %s - battery level will not be available",
-                 EMERALD_BATTERY_SERVICE_UUID.to_string().c_str(),
-                 EMERALD_BATTERY_CHARACTERISTIC_UUID.to_string().c_str());
+        ESP_LOGW(TAG,
+                 "No battery characteristic found at service 0x180F char 0x2A19 - battery level will not be available");
         // Don't break - battery is optional
       } else {
         this->battery_char_handle_ = chr->handle;
