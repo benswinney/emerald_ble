@@ -50,6 +50,16 @@ binary_sensor:
       name: "Emerald Connected"
 ```
 
+### Energy totals
+
+The `energy` and `daily_energy` totals are saved to the ESP32's flash, keyed on the meter's MAC address:
+
+- They survive reboots and firmware recompiles, and are republished at boot so Home Assistant's long-term statistics don't see a reset.
+- Several meters on one ESP32 keep separate totals. Changing `mac_address` starts a new total.
+- Saves happen at most once a minute, so a power cut can lose up to the last minute of pulses. The daily reset and a manual reset save immediately.
+
+Each total only counts while its sensor is in your config. If you add `energy` or `daily_energy` later, it starts from zero at that point; nothing is back-filled. The daily reset at the start of each day also needs `daily_energy` configured.
+
 ### Manual daily-energy reset
 
 `reset_daily_energy()` is callable from a lambda, e.g. a template button:
