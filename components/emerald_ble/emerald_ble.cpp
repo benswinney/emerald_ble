@@ -105,9 +105,21 @@ void Emerald::force_reconnect_() {
 }
 
 std::string Emerald::pkt_to_hex_(const uint8_t *data, uint16_t len) {
-  // Delegate to ESPHome's helper: handles any length safely (no fixed buffer)
-  // and produces consistent formatting with the rest of the codebase.
-  return format_hex_pretty(data, len);
+  // Formatted locally rather than via ESPHome's format_hex_pretty(): 2026.11
+  // moved that std::string overload out of helpers.h into alloc_helpers.h, a
+  // header that does not exist before 2026.5. Depending on neither keeps one
+  // source building on every ESPHome version. Output: "0A.1B.2C".
+  static const char HEX_DIGITS[] = "0123456789ABCDEF";
+  std::string out;
+  out.reserve(len * 3);
+  for (uint16_t i = 0; i < len; i++) {
+    if (i > 0) {
+      out += '.';
+    }
+    out += HEX_DIGITS[data[i] >> 4];
+    out += HEX_DIGITS[data[i] & 0x0F];
+  }
+  return out;
 }
 
 void Emerald::decode_(const uint8_t *data, uint16_t length) {
