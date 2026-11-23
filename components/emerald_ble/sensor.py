@@ -23,7 +23,6 @@ from . import Emerald, CODEOWNERS, DEPENDENCIES  # noqa: F401  (re-exported for 
 _LOGGER = logging.getLogger(__name__)
 
 CONF_PAIRING_CODE = "pairing_code"
-CONF_NOTIFICATION_INTERVAL = "notification_interval"
 CONF_PULSES_PER_KWH = "pulses_per_kwh"
 CONF_DAILY_ENERGY = "daily_energy"
 
