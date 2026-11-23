@@ -80,7 +80,9 @@ class Emerald : public esphome::ble_client::BLEClientNode, public Component {
 #ifdef USE_TIME
   void set_time(time::RealTimeClock *time) { this->time_ = time; }
 #endif
-  void set_pulses_per_kwh(uint16_t pulses_per_kwh) {
+  // float to match sensor.py's cv.float_range: a uint16_t parameter dropped the
+  // fraction of values like 1600.5 and wrapped anything above 65535.
+  void set_pulses_per_kwh(float pulses_per_kwh) {
     pulses_per_kwh_ = pulses_per_kwh;
     // disabled for now pulse_multiplier_ = (standard_update_interval / (pulses_per_kwh / kw_to_w_conversion));
     pulse_multiplier_ = ((hr_to_s_conversion * kw_to_w_conversion) / (standard_update_interval * pulses_per_kwh));
