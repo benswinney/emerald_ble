@@ -418,8 +418,13 @@ void Emerald::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_par
       break;
     }
     case ESP_GAP_BLE_PASSKEY_REQ_EVT: { /* passkey request event */
-      ESP_LOGE(TAG, "ESP_GAP_BLE_PASSKEY_REQ_EVT, onPassKeyRequest %x", event);
-      esp_ble_passkey_reply(param->ble_security.ble_req.bd_addr, true, this->pairing_code_);
+      // A normal pairing step, not an error.
+      ESP_LOGI(TAG, "[%s] Passkey requested, replying with configured pairing code",
+               this->parent_->address_str());
+      auto ret = esp_ble_passkey_reply(param->ble_security.ble_req.bd_addr, true, this->pairing_code_);
+      if (ret) {
+        ESP_LOGW(TAG, "[%s] esp_ble_passkey_reply failed, status=%d", this->parent_->address_str(), ret);
+      }
       break;
     }
     default:
